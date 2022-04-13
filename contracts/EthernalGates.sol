@@ -1,5 +1,9 @@
 pragma solidity 0.8.11;
 
+import "erc721a/contracts/extensions/ERC721AOwnersExplicit.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 /// @author Hammad Ghazi
 contract EthernalGates is ERC721A, Ownable {
     using MerkleProof for bytes32[];

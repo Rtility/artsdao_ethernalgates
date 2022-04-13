@@ -6,7 +6,7 @@ import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
 import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-gas-reporter';
-import "solidity-coverage"
+import 'solidity-coverage';
 
 dotenv.config();
 
@@ -14,7 +14,7 @@ const privateAcc = process.env.ETH_PRIVATE_KEY !== undefined ? [process.env.ETH_
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.13',
+    version: '0.8.11',
     settings: {
       optimizer: {
         enabled: true,
