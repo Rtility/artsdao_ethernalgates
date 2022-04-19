@@ -1,7 +1,18 @@
 pragma solidity 0.8.11;
 
+error ExceedsMaximumSupply();
+error SupplyExceedingMaxSupply();
+error TransferFailed();
+error CallerIsContract();
+error PresaleNotStarted();
+error AddressNotEligibleForPresaleMint();
+error CountExceedsAllowedMintCount();
+error IncorrectEtherSent();
+error PublicSaleNotStarted();
+error TransactionExceedsMaxNFTsAllowedInPresale();
+
 /// @author Hammad Ghazi
-contract EthernalGatesReview is ERC721A, Ownable {
+contract EthernalGatesReview is ERC721AQueryable, Ownable {
     using MerkleProof for bytes32[];
 
     enum SALE_STATUS {
@@ -14,7 +25,7 @@ contract EthernalGatesReview is ERC721A, Ownable {
 
     SALE_STATUS public saleStatus;
 
-    string baseTokenURI;
+    string private baseTokenURI;
 
     // Max Supply of Ethernal Gates
     uint256 public constant MAX_SUPPLY = 6000;
@@ -28,19 +39,23 @@ contract EthernalGatesReview is ERC721A, Ownable {
     bytes32 public merkleRoot;
 
     // To store NFTs a particular address has minted in each whitelist phase
-    mapping(address => uint256) public investorMintCount;
-    mapping(address => uint256) public vipMintCount;
-    mapping(address => uint256) public wlMintCount;
+    struct MintCounts {
+        uint16 investorMintCount;
+        uint16 vipMintCount;
+        uint16 wlMintCount;
+    }
 
-    constructor(string memory baseURI) ERC721A("Ethernal Gates", "Ethernal Gates") {
-        setBaseURI(baseURI);
+    mapping(address => MintCounts) public mintCounts;
+
+    constructor(string memory baseURI)
+        ERC721A("Ethernal Gates", "Ethernal Gates")
+    {
+        baseTokenURI = baseURI;
     }
 
     modifier soldOut(uint256 _count) {
-        require(
-            totalSupply() + _count <= currentSupply,
-            "Transaction will exceed maximum available supply of Ethernal Gates"
-        );
+        if (_totalMinted() + _count > currentSupply)
+            revert ExceedsMaximumSupply();
         _;
     }
 
@@ -55,6 +70,10 @@ contract EthernalGatesReview is ERC721A, Ownable {
         merkleRoot = _merkleRoot;
     }
 
+    function setBaseURI(string calldata baseURI) external onlyOwner {
+        baseTokenURI = baseURI;
+    }
+
     function changePresalePrice(uint256 _presalePrice) external onlyOwner {
         presalePrice = _presalePrice;
     }
@@ -65,17 +84,24 @@ contract EthernalGatesReview is ERC721A, Ownable {
 
     // To increase the supply, can't exceed 6000
     function increaseSupply(uint256 _increaseBy) external onlyOwner {
-        require(currentSupply + _increaseBy <= MAX_SUPPLY, "Cannot increase supply by more than 6000");
-        currentSupply += _increaseBy;
+        if (currentSupply + _increaseBy > MAX_SUPPLY)
+            revert SupplyExceedingMaxSupply();
+        unchecked {
+            currentSupply += _increaseBy;
+        }
     }
 
     function withdraw() external onlyOwner {
-        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
-        require(success, "Transfer failed.");
+        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        if (!success) revert TransferFailed();
     }
 
     // Set some Ethernal Gates aside
-    function reserveEthernalGates(uint256 _count) external onlyOwner soldOut(_count) {
+    function reserveEthernalGates(uint256 _count)
+        external
+        onlyOwner
+        soldOut(_count)
+    {
         mint(msg.sender, _count);
     }
 
@@ -84,15 +110,13 @@ contract EthernalGatesReview is ERC721A, Ownable {
         onlyOwner
         soldOut(_count * _addresses.length)
     {
-        require(_addresses.length > 0, "No address found for airdrop");
-        for (uint256 i; i < _addresses.length; i++) {
-            require(_addresses[i] != address(0), "Can't airdrop to zero address");
-            mint(_addresses[i], _count);
+        uint256 stop = _addresses.length;
+        for (uint256 i; i != stop; ) {
+            _mint(_addresses[i], _count, "", false);
+            unchecked {
+                i++;
+            }
         }
-    }
-
-    function setBaseURI(string memory baseURI) public onlyOwner {
-        baseTokenURI = baseURI;
     }
 
     // Getter functions
@@ -101,7 +125,7 @@ contract EthernalGatesReview is ERC721A, Ownable {
         return baseTokenURI;
     }
 
-    function _startTokenId() internal view virtual override returns (uint256) {
+    function _startTokenId() internal pure virtual override returns (uint256) {
         return 1;
     }
 
@@ -114,51 +138,48 @@ contract EthernalGatesReview is ERC721A, Ownable {
     function presaleMint(
         bytes32[] calldata _proof,
         uint256 _allowedCount,
-        uint256 _count
+        uint16 _count
     ) external payable soldOut(_count) {
-        require(merkleRoot != 0, "No address is eligible for presale minting yet");
-        require(saleStatus != SALE_STATUS.OFF || saleStatus != SALE_STATUS.PUBLIC, "Presale sale not started");
-        require(
-            MerkleProof.verify(_proof, merkleRoot, keccak256(abi.encodePacked(msg.sender, _allowedCount))),
-            "Address not eligible for presale mint"
-        );
-
-        require(_count <= _allowedCount, "Mint count exceeds allowed mint count");
-        require(msg.value >= presalePrice * _count, "Incorrect ether sent with this transaction");
-        if (saleStatus == SALE_STATUS.INVESTOR) {
-            require(
-                _allowedCount >= investorMintCount[msg.sender] + _count,
-                "Transaction will exceed maximum NFTs allowed to mint in investor sale"
-            );
-
-            investorMintCount[msg.sender] += _count;
-        } else if (saleStatus == SALE_STATUS.VIP) {
-            require(
-                _allowedCount >= vipMintCount[msg.sender] + _count,
-                "Transaction will exceed maximum NFTs allowed to mint in vip sale"
-            );
-            vipMintCount[msg.sender] += _count;
+        SALE_STATUS saleState = saleStatus;
+        MintCounts memory mintCount = mintCounts[msg.sender];
+        if (saleState == SALE_STATUS.OFF || saleState == SALE_STATUS.PUBLIC)
+            revert PresaleNotStarted();
+        if (
+            !MerkleProof.verify(
+                _proof,
+                merkleRoot,
+                keccak256(abi.encodePacked(msg.sender, _allowedCount))
+            )
+        ) revert AddressNotEligibleForPresaleMint();
+        if (_count > _allowedCount) revert CountExceedsAllowedMintCount();
+        if (msg.value < presalePrice * _count) revert IncorrectEtherSent();
+        if (saleState == SALE_STATUS.INVESTOR) {
+            if (_allowedCount < mintCount.investorMintCount + _count)
+                revert TransactionExceedsMaxNFTsAllowedInPresale();
+            mintCount.investorMintCount += _count;
+        } else if (saleState == SALE_STATUS.VIP) {
+            if (_allowedCount < mintCount.vipMintCount + _count)
+                revert TransactionExceedsMaxNFTsAllowedInPresale();
+            mintCount.vipMintCount += _count;
         } else {
-            require(
-                _allowedCount >= wlMintCount[msg.sender] + _count,
-                "Transaction will exceed maximum NFTs allowed to mint in presale"
-            );
-
-            wlMintCount[msg.sender] += _count;
+            if (_allowedCount < mintCount.wlMintCount + _count)
+                revert TransactionExceedsMaxNFTsAllowedInPresale();
+            mintCount.wlMintCount += _count;
         }
-
+        mintCounts[msg.sender] = mintCount;
         mint(msg.sender, _count);
     }
 
     // Public mint
 
     function publicMint(uint256 _count) external payable soldOut(_count) {
-        require(saleStatus == SALE_STATUS.PUBLIC, "Public sale is not started");
-        require(msg.value >= publicPrice * _count, "Incorrect ether sent with this transaction");
+        if (saleStatus != SALE_STATUS.PUBLIC) revert PublicSaleNotStarted();
+        if (msg.value < publicPrice * _count) revert IncorrectEtherSent();
         mint(msg.sender, _count);
     }
 
     function mint(address _addr, uint256 quantity) private {
-        _safeMint(_addr, quantity);
+        if (tx.origin != msg.sender) revert CallerIsContract();
+        _mint(_addr, quantity, "", false);
     }
 }
