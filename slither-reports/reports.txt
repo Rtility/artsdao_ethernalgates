@@ -1,0 +1,118 @@
+Reentrancy in ERC721A._mint(address,uint256,bytes,bool) (node_modules/erc721a/contracts/ERC721A.sol#365-407):
+        External calls:
+        - ! _checkContractOnERC721Received(address(0),to,updatedIndex ++,_data) (node_modules/erc721a/contracts/ERC721A.sol#393)
+                - IERC721Receiver(to).onERC721Received(_msgSender(),from,tokenId,_data) (node_modules/erc721a/contracts/ERC721A.sol#570-580)
+        State variables written after the call(s):
+        - _currentIndex = updatedIndex (node_modules/erc721a/contracts/ERC721A.sol#404)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+
+EthernalGates.airdrop(address[],uint256).i (contracts/EthernalGates.sol#92) is a local variable never initialized
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-local-variables
+
+ERC721A._checkContractOnERC721Received(address,address,uint256,bytes) (node_modules/erc721a/contracts/ERC721A.sol#564-581) ignores return value by IERC721Receiver(to).onERC721Received(_msgSender(),from,tokenId,_data) (node_modules/erc721a/contracts/ERC721A.sol#570-580)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+ERC721A._checkContractOnERC721Received(address,address,uint256,bytes) (node_modules/erc721a/contracts/ERC721A.sol#564-581) has external calls inside a loop: IERC721Receiver(to).onERC721Received(_msgSender(),from,tokenId,_data) (node_modules/erc721a/contracts/ERC721A.sol#570-580)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+
+Variable 'ERC721A._checkContractOnERC721Received(address,address,uint256,bytes).retval (node_modules/erc721a/contracts/ERC721A.sol#570)' in ERC721A._checkContractOnERC721Received(address,address,uint256,bytes) (node_modules/erc721a/contracts/ERC721A.sol#564-581) potentially used before declaration: retval == IERC721Receiver(to).onERC721Received.selector (node_modules/erc721a/contracts/ERC721A.sol#571)
+Variable 'ERC721A._checkContractOnERC721Received(address,address,uint256,bytes).reason (node_modules/erc721a/contracts/ERC721A.sol#572)' in ERC721A._checkContractOnERC721Received(address,address,uint256,bytes) (node_modules/erc721a/contracts/ERC721A.sol#564-581) potentially used before declaration: reason.length == 0 (node_modules/erc721a/contracts/ERC721A.sol#573)
+Variable 'ERC721A._checkContractOnERC721Received(address,address,uint256,bytes).reason (node_modules/erc721a/contracts/ERC721A.sol#572)' in ERC721A._checkContractOnERC721Received(address,address,uint256,bytes) (node_modules/erc721a/contracts/ERC721A.sol#564-581) potentially used before declaration: revert(uint256,uint256)(32 + reason,mload(uint256)(reason)) (node_modules/erc721a/contracts/ERC721A.sol#577)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#pre-declaration-usage-of-local-variables
+
+Address.verifyCallResult(bool,bytes,string) (node_modules/@openzeppelin/contracts/utils/Address.sol#201-221) uses assembly
+        - INLINE ASM (node_modules/@openzeppelin/contracts/utils/Address.sol#213-216)
+MerkleProof._efficientHash(bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MerkleProof.sol#53-59) uses assembly
+        - INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MerkleProof.sol#54-58)
+ERC721A._checkContractOnERC721Received(address,address,uint256,bytes) (node_modules/erc721a/contracts/ERC721A.sol#564-581) uses assembly
+        - INLINE ASM (node_modules/erc721a/contracts/ERC721A.sol#576-578)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+
+Different versions of Solidity is used:
+        - Version used: ['0.8.11', '^0.8.0', '^0.8.1', '^0.8.4']
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/access/Ownable.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol#4)
+        - ^0.8.1 (node_modules/@openzeppelin/contracts/utils/Address.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/utils/Context.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/utils/cryptography/MerkleProof.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol#4)
+        - ^0.8.0 (node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol#4)
+        - 0.8.11 (contracts/EthernalGates.sol#1)
+        - ^0.8.4 (node_modules/erc721a/contracts/ERC721A.sol#4)
+        - ^0.8.4 (node_modules/erc721a/contracts/extensions/ERC721AOwnersExplicit.sol#4)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#different-pragma-directives-are-used
+
+ERC721A._mint(address,uint256,bytes,bool) (node_modules/erc721a/contracts/ERC721A.sol#365-407) has costly operations inside a loop:
+        - _currentIndex = updatedIndex (node_modules/erc721a/contracts/ERC721A.sol#404)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#costly-operations-inside-a-loop
+
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/access/Ownable.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol#4) allows old versions
+Pragma version^0.8.1 (node_modules/@openzeppelin/contracts/utils/Address.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/Context.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/cryptography/MerkleProof.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol#4) allows old versions
+Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol#4) allows old versions
+Pragma version0.8.11 (contracts/EthernalGates.sol#1) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+solc-0.8.11 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+Low level call in Address.sendValue(address,uint256) (node_modules/@openzeppelin/contracts/utils/Address.sol#60-65):
+        - (success) = recipient.call{value: amount}() (node_modules/@openzeppelin/contracts/utils/Address.sol#63)
+Low level call in Address.functionCallWithValue(address,bytes,uint256,string) (node_modules/@openzeppelin/contracts/utils/Address.sol#128-139):
+        - (success,returndata) = target.call{value: value}(data) (node_modules/@openzeppelin/contracts/utils/Address.sol#137)
+Low level call in Address.functionStaticCall(address,bytes,string) (node_modules/@openzeppelin/contracts/utils/Address.sol#157-166):
+        - (success,returndata) = target.staticcall(data) (node_modules/@openzeppelin/contracts/utils/Address.sol#164)
+Low level call in Address.functionDelegateCall(address,bytes,string) (node_modules/@openzeppelin/contracts/utils/Address.sol#184-193):
+        - (success,returndata) = target.delegatecall(data) (node_modules/@openzeppelin/contracts/utils/Address.sol#191)
+Low level call in EthernalGates.withdraw() (contracts/EthernalGates.sol#76-79):
+        - (success) = address(msg.sender).call{value: address(this).balance}() (contracts/EthernalGates.sol#77)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+
+Parameter EthernalGates.setSaleStatus(EthernalGates.SALE_STATUS)._status (contracts/EthernalGates.sol#54) is not in mixedCase
+Parameter EthernalGates.setMerkleRoot(bytes32)._merkleRoot (contracts/EthernalGates.sol#58) is not in mixedCase
+Parameter EthernalGates.changePresalePrice(uint256)._presalePrice (contracts/EthernalGates.sol#62) is not in mixedCase
+Parameter EthernalGates.changePublicPrice(uint256)._publicPrice (contracts/EthernalGates.sol#66) is not in mixedCase
+Parameter EthernalGates.increaseSupply(uint256)._increaseBy (contracts/EthernalGates.sol#71) is not in mixedCase
+Parameter EthernalGates.reserveEthernalGates(uint256)._count (contracts/EthernalGates.sol#82) is not in mixedCase
+Parameter EthernalGates.airdrop(address[],uint256)._addresses (contracts/EthernalGates.sol#86) is not in mixedCase
+Parameter EthernalGates.airdrop(address[],uint256)._count (contracts/EthernalGates.sol#86) is not in mixedCase
+Parameter EthernalGates.presaleMint(bytes32[],uint256,uint256)._proof (contracts/EthernalGates.sol#119) is not in mixedCase
+Parameter EthernalGates.presaleMint(bytes32[],uint256,uint256)._allowedCount (contracts/EthernalGates.sol#120) is not in mixedCase
+Parameter EthernalGates.presaleMint(bytes32[],uint256,uint256)._count (contracts/EthernalGates.sol#121) is not in mixedCase
+Parameter EthernalGates.publicMint(uint256)._count (contracts/EthernalGates.sol#159) is not in mixedCase
+Parameter EthernalGates.mint(address,uint256)._addr (contracts/EthernalGates.sol#165) is not in mixedCase
+Enum EthernalGates.SALE_STATUS (contracts/EthernalGates.sol#11-17) is not in CapWords
+Parameter ERC721A.safeTransferFrom(address,address,uint256,bytes)._data (node_modules/erc721a/contracts/ERC721A.sol#313) is not in mixedCase
+Variable ERC721A._currentIndex (node_modules/erc721a/contracts/ERC721A.sol#67) is not in mixedCase
+Variable ERC721A._burnCounter (node_modules/erc721a/contracts/ERC721A.sol#70) is not in mixedCase
+Variable ERC721A._ownerships (node_modules/erc721a/contracts/ERC721A.sol#80) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+renounceOwnership() should be declared external:
+        - Ownable.renounceOwnership() (node_modules/@openzeppelin/contracts/access/Ownable.sol#54-56)
+transferOwnership(address) should be declared external:
+        - Ownable.transferOwnership(address) (node_modules/@openzeppelin/contracts/access/Ownable.sol#62-65)
+balanceOf(address) should be declared external:
+        - ERC721A.balanceOf(address) (node_modules/erc721a/contracts/ERC721A.sol#139-142)
+name() should be declared external:
+        - ERC721A.name() (node_modules/erc721a/contracts/ERC721A.sol#214-216)
+symbol() should be declared external:
+        - ERC721A.symbol() (node_modules/erc721a/contracts/ERC721A.sol#221-223)
+tokenURI(uint256) should be declared external:
+        - ERC721A.tokenURI(uint256) (node_modules/erc721a/contracts/ERC721A.sol#228-233)
+approve(address,uint256) should be declared external:
+        - ERC721A.approve(address,uint256) (node_modules/erc721a/contracts/ERC721A.sol#247-256)
+setApprovalForAll(address,bool) should be declared external:
+        - ERC721A.setApprovalForAll(address,bool) (node_modules/erc721a/contracts/ERC721A.sol#270-275)
+transferFrom(address,address,uint256) should be declared external:
+        - ERC721A.transferFrom(address,address,uint256) (node_modules/erc721a/contracts/ERC721A.sol#287-293)
+safeTransferFrom(address,address,uint256) should be declared external:
+        - ERC721A.safeTransferFrom(address,address,uint256) (node_modules/erc721a/contracts/ERC721A.sol#298-304)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#public-function-that-could-be-declared-external
